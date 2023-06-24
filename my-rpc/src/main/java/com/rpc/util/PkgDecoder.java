@@ -24,13 +24,13 @@ public class PkgDecoder extends ByteToMessageDecoder
 
         byte[] intBuf = new byte[4];
         buffer.getBytes(buffer.readerIndex() + RpcProtocol.HEAD_LEN - 4, intBuf);    // ImHeader的bodyLen在第68位到71为, int类型
-        int bodyLen = ByteConverter.bytesToIntBigEndian(intBuf);
+        int messageLen = ByteConverter.bytesToIntBigEndian(intBuf);
 
-        if (buffer.readableBytes() < RpcProtocol.HEAD_LEN + bodyLen) {
+        if (buffer.readableBytes() < messageLen) {
             return; //未读完足够的字节流，缓存后继续读
         }
 
-        byte[] bytesReady = new byte[RpcProtocol.HEAD_LEN + bodyLen];
+        byte[] bytesReady = new byte[messageLen];
         buffer.readBytes(bytesReady);
         out.add(bytesReady);
     }

@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 
 public class UserService {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
-
+    private String className = "com.rpc.server.service.UserService";
+    private String methodName = "addUser";
     public int addUser (User userinfo) throws Exception {
         //初始化客户端连接
         TcpClient client = TcpClient.GetInstance();
@@ -25,9 +26,18 @@ public class UserService {
 
         //构造请求数据
         RpcProtocol rpcReq = new RpcProtocol();
-        rpcReq.setCmd(RpcCommand.CMD_CREATE_USER);
+        byte[] classNameArr = className.getBytes();
+        rpcReq.setClassNameLen(classNameArr.length);
+        rpcReq.setClassName(classNameArr);
+
+        byte[] methodNameArr = methodName.getBytes();
+        rpcReq.setMethodNameLen(methodNameArr.length);
+        rpcReq.setMethodName(methodNameArr);
+
         rpcReq.setVersion(MyContants.VERSION);
+
         rpcReq.setMagicNum(MyContants.MAGIC_NUMBER);
+
         byte[] body = userinfo.userInfoTobyteArray();
         rpcReq.setBodyLen(body.length);
         rpcReq.setBody(body);

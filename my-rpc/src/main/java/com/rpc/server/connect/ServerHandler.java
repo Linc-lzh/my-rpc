@@ -14,16 +14,13 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
 
 public class ServerHandler extends ChannelInboundHandlerAdapter {
     private Logger logger = LoggerFactory.getLogger(ServerHandler.class);
-
-
-    private static int CMD_CREATE_USER = 1;
-    private static int CMD_FIND_USER = 2;
-
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -64,22 +61,38 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
         //解析请求，并调用处理方法
         int ret = -1;
-        if(rpcReq.getCmd() == CMD_CREATE_USER){
-            User user = User.byteArrayToUserInfo(rpcReq.getBody());
-            UserService userService = new UserService();
-            ret = userService.addUser(user);
-
+        if(rpcReq.getClassNameLen() > 0){
+            ret = executeServerMethod(rpcReq);
 
             //构造返回数据
-            RpcProtocol rpcResp = new RpcProtocol();
-            rpcResp.setCmd(rpcReq.getCmd());
-            rpcResp.setVersion(rpcReq.getVersion());
-            rpcResp.setMagicNum(rpcReq.getMagicNum());
-            rpcResp.setBodyLen(Integer.BYTES);
-            byte[] body = rpcResp.createUserRespTobyteArray(ret);
-            rpcResp.setBody(body);
-            ByteBuf respData = Unpooled.copiedBuffer(rpcResp.generateByteArray());
+            ByteBuf respData = constructRespData(rpcReq, ret);
             ctx.channel().writeAndFlush(respData);
         }
+    }
+
+    private static ByteBuf constructRespData(RpcProtocol rpcReq, int ret) {
+        RpcProtocol rpcResp = new RpcProtocol();
+        rpcResp.setClassNameLen(rpcReq.getClassNameLen());
+        rpcResp.setClassName(rpcReq.getClassName());
+        rpcResp.setMethodNameLen(rpcReq.getMethodNameLen());
+        rpcResp.setMethodName(rpcReq.getMethodName());
+        rpcResp.setVersion(rpcReq.getVersion());
+        rpcResp.setMagicNum(rpcReq.getMagicNum());
+        rpcResp.setBodyLen(Integer.BYTES);
+        byte[] body = rpcResp.createUserRespTobyteArray(ret);
+        rpcResp.setBody(body);
+        ByteBuf respData = Unpooled.copiedBuffer(rpcResp.generateByteArray());
+        return respData;
+    }
+
+    private static int executeServerMethod(RpcProtocol rpcReq) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        int ret;
+        User user = User.byteArrayToUserInfo(rpcReq.getBody());
+        String klassName = new String(rpcReq.getClassName());
+        Class<?> klass = Class.forName(klassName);
+        String methodName = new String(rpcReq.getMethodName());
+        Method method = klass.getMethod(methodName, User.class);
+        ret = (int)method.invoke(klass.newInstance(), user);
+        return ret;
     }
 }
