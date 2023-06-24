@@ -9,6 +9,6 @@ public class UserService {
 
     public int addUser(User userinfo){
         logger.debug("create user success, uid=" + userinfo.getUid());
-        return 0;
+        return 1;
     }
 }
