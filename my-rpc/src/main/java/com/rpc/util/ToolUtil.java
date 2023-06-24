@@ -4,7 +4,7 @@ import java.util.Random;
 
 public class ToolUtil {
 
-    //  num 表示生成的数组中1的个数 在数组中1表示抛弃请求 0表示接受请求
+    //  num 表示生成的数组中1的个数 在数组中0表示抛弃请求 1表示接受请求
     public static byte[] randomGenerator(int limit, int num) {
 
         byte[] tempArray = new byte[limit];

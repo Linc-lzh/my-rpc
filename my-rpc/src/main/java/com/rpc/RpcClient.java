@@ -25,6 +25,7 @@ public class RpcClient {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 User userinfo = (User)args[0];
+                int ret = -1;
                 if(method.isAnnotationPresent(RpcReference.class)) {
                     RpcReference annotation = method.getAnnotation(RpcReference.class);
                     //初始化客户端连接
@@ -58,16 +59,19 @@ public class RpcClient {
                     byte[] reqData = rpcReq.generateByteArray();
 
                     //发送请求
-                    client.sendData(reqData);
+                    boolean isSend = client.sendData(reqData);
 
-                    //接收请求结果
-                    byte[] recvData = client.recvData();
+                    if(isSend){
+                        //接收请求结果
+                        byte[] recvData = client.recvData();
 
-                    //反序列化结果
-                    RpcProtocol rpcResp = new RpcProtocol();
-                    rpcResp.byteArrayToRpcHeader(recvData);
+                        //反序列化结果
+                        RpcProtocol rpcResp = new RpcProtocol();
+                        rpcResp.byteArrayToRpcHeader(recvData);
 
-                    int ret = ByteConverter.bytesToInt(rpcResp.getBody(), 0);
+                        ret = ByteConverter.bytesToInt(rpcResp.getBody(), 0);
+                    }
+
                     return ret;
                 }
 
@@ -80,7 +84,7 @@ public class RpcClient {
         user.setSex((short) 1);
 
         int ret = ((UserService)proxyInstance).addUser(user);
-        if(ret == 0)
+        if(ret == 1)
             System.out.println("调用远程服务创建用户成功！！！");
         else
             System.out.println("调用远程服务创建用户失败！！！");
